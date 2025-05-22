@@ -1,6 +1,13 @@
 const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const sharp = require('sharp');
+const os = require('os');
+
+const THUMB_SIZE = 60;
+const THUMB_DIR = path.join(app.getPath('userData'), 'thumbnails');
+if (!fs.existsSync(THUMB_DIR)) fs.mkdirSync(THUMB_DIR, { recursive: true });
+
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -49,3 +56,23 @@ console.log('Preload path:', path.join(__dirname, 'preload.js'));
     return "p:"; // app.getPath('pictures'); // Start from Pictures folder
   });
 });
+
+
+ipcMain.handle('get-thumbnail-path', async (event, imagePath) => {
+  try {
+    const hash = Buffer.from(imagePath).toString('base64').replace(/[/+=]/g, '_');
+    const thumbPath = path.join(THUMB_DIR, `${hash}.png`);
+
+    if (!fs.existsSync(thumbPath)) {
+      await sharp(imagePath)
+        .resize(THUMB_SIZE, THUMB_SIZE, { fit: 'cover' })
+        .toFile(thumbPath);
+    }
+
+    return thumbPath;
+  } catch (err) {
+    console.error('Thumbnail generation failed:', err);
+    return null;
+  }
+});
+

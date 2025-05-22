@@ -8,6 +8,7 @@ console.log('Preload running, path.join:', path.join(__dirname, 'test'));
 contextBridge.exposeInMainWorld('electronAPI', {
   getFolderContents: (dirPath) => ipcRenderer.invoke('get-folder-contents', dirPath),
   getInitialFolder: () => ipcRenderer.invoke('get-initial-folder'),
+  getThumbnailPath: (imagePath) => ipcRenderer.invoke('get-thumbnail-path', imagePath),
   path: {
     join: (...args) => path.join(...args),
     dirname: (p) => path.dirname(p),
