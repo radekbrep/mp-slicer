@@ -5,6 +5,7 @@ const mainImage = document.getElementById('main-image');
 let currentPath = '';
 let imageEntries = [];
 let observer;
+let currentSort = 'name';
 
 async function loadFolder(folderPath) {
   const contents = await window.electronAPI.getFolderContents(folderPath);
@@ -14,9 +15,24 @@ async function loadFolder(folderPath) {
   }
 
   currentPath = folderPath;
-  imageEntries = contents.images.map(name => ({
-    name,
-    fullPath: join(folderPath, name),
+
+  // Sort folders
+  contents.folders.sort((a, b) => {
+    return currentSort === 'name'
+      ? a.name.localeCompare(b.name)
+      : b.mtime - a.mtime;
+  });
+
+  // Sort images
+  contents.images.sort((a, b) => {
+    return currentSort === 'name'
+      ? a.name.localeCompare(b.name)
+      : b.mtime - a.mtime;
+  });
+
+  imageEntries = contents.images.map(entry => ({
+    name: entry.name,
+    fullPath: join(folderPath, entry.name)
   }));
 
   renderFileList(folderPath, contents.folders);
@@ -37,10 +53,11 @@ function renderFileList(folderPath, folders) {
   // Folders
   folders.forEach(folder => {
     const li = document.createElement('li');
-    li.textContent = folder;
-    li.onclick = () => loadFolder(join(folderPath, folder));
+    li.textContent = folder.name;
+    li.onclick = () => loadFolder(join(folderPath, folder.name));
     fileList.appendChild(li);
-  });
+});
+  
 
   // Lazy-render placeholder divs
   imageEntries.forEach(entry => {
@@ -80,4 +97,9 @@ function setupLazyLoading() {
 window.addEventListener('DOMContentLoaded', async () => {
   const startPath = await window.electronAPI.getInitialFolder();
   loadFolder(startPath);
+});
+
+document.getElementById('sortSelect').addEventListener('change', e => {
+  currentSort = e.target.value;
+  loadFolder(currentPath);
 });

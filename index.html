@@ -15,7 +15,14 @@
 <body>
   <div id="container">
     <div id="left-pane">
-      <ul id="file-list"></ul>
+      <div>
+        <label for="sortSelect">Sort by:</label>
+        <select id="sortSelect">
+            <option value="name">Name</option>
+            <option value="date">Date modified</option>
+        </select>
+        </div>
+        <ul id="file-list"></ul>
     </div>
     <div id="right-pane">
       <img id="main-image" src="" alt="Select an image" />

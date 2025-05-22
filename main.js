@@ -28,19 +28,21 @@ console.log('Preload path:', path.join(__dirname, 'preload.js'));
     console.log('Getting folder contents for:', folderPath);
     const result = { folders: [], images: [] };
     try {
-      const entries = fs.readdirSync(folderPath, { withFileTypes: true });
-      for (const entry of entries) {
+        const entries = fs.readdirSync(folderPath, { withFileTypes: true });
+        for (const entry of entries) {
+        const fullPath = path.join(folderPath, entry.name);
+        const stat = fs.statSync(fullPath);
         if (entry.isDirectory()) {
-          result.folders.push(entry.name);
+            result.folders.push({ name: entry.name, mtime: stat.mtimeMs });
         } else if (/\.(jpg|jpeg|png|gif|bmp)$/i.test(entry.name)) {
-          result.images.push(entry.name);
+            result.images.push({ name: entry.name, mtime: stat.mtimeMs });
         }
-      }
-      return result;
+        }
+        return result;
     } catch (e) {
-      return { error: e.message };
+        return { error: e.message };
     }
-  });
+});
 
   ipcMain.handle('get-initial-folder', () => {
     console.log('Getting initial folder' + app.getPath('pictures'));
