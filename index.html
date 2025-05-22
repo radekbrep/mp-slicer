@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+      <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'"
+    />
+    <meta
+      http-equiv="X-Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'"
+    />
+  <title>Image Viewer App</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="container">
+    <div id="left-pane">
+      <ul id="file-list"></ul>
+    </div>
+    <div id="right-pane">
+      <img id="main-image" src="" alt="Select an image" />
+    </div>
+  </div>
+  <script src="renderer.js"></script>
+</body>
+</html>
