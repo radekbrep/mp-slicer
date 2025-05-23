@@ -6,6 +6,7 @@ const os = require('os');
 
 const THUMB_SIZE = 60;
 const THUMB_DIR = path.join(app.getPath('userData'), 'thumbnails');
+const MAX_CACHE_SIZE = 50 * 1024 * 1024; // 50 MB
 if (!fs.existsSync(THUMB_DIR)) fs.mkdirSync(THUMB_DIR, { recursive: true });
 
 
@@ -27,7 +28,13 @@ function createWindow() {
 
 app.whenReady().then(() => {
   createWindow();
-console.log('Preload path:', path.join(__dirname, 'preload.js'));
+
+  cleanThumbnailCache();
+
+  // Optional: re-run every hour
+  // setInterval(cleanThumbnailCache, 60 * 60 * 1000);
+
+  console.log('Preload path:', path.join(__dirname, 'preload.js'));
 
   console.log('App is ready');
 
@@ -64,10 +71,14 @@ ipcMain.handle('get-thumbnail-path', async (event, imagePath) => {
     const thumbPath = path.join(THUMB_DIR, `${hash}.png`);
 
     if (!fs.existsSync(thumbPath)) {
-      await sharp(imagePath)
-        .resize(THUMB_SIZE, THUMB_SIZE, { fit: 'cover' })
-        .toFile(thumbPath);
-    }
+    await sharp(imagePath)
+      .rotate()
+      .resize(THUMB_SIZE, THUMB_SIZE, { fit: 'cover' })
+      .toFile(thumbPath);
+  } else {
+    fs.utimesSync(thumbPath, new Date(), new Date()); // 🆕 bump access time
+  }
+
 
     return thumbPath;
   } catch (err) {
@@ -75,4 +86,31 @@ ipcMain.handle('get-thumbnail-path', async (event, imagePath) => {
     return null;
   }
 });
+
+function cleanThumbnailCache() {
+  try {
+    const files = fs.readdirSync(THUMB_DIR).map(name => {
+      const fullPath = path.join(THUMB_DIR, name);
+      const stats = fs.statSync(fullPath);
+      return { path: fullPath, mtime: stats.mtimeMs, size: stats.size };
+    });
+
+    let totalSize = files.reduce((sum, f) => sum + f.size, 0);
+
+    if (totalSize <= MAX_CACHE_SIZE) return;
+
+    // Sort by last modified (oldest first)
+    files.sort((a, b) => a.mtime - b.mtime);
+
+    for (const file of files) {
+      fs.unlinkSync(file.path);
+      totalSize -= file.size;
+      if (totalSize <= MAX_CACHE_SIZE) break;
+    }
+
+    console.log('🧹 Thumbnail cache cleaned');
+  } catch (err) {
+    console.error('Error cleaning thumbnail cache:', err);
+  }
+}
 
