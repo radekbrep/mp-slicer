@@ -79,10 +79,20 @@ function setupLazyLoading() {
   const images = document.querySelectorAll('#file-list img[data-src]');
 
   observer = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
+    entries.forEach(async entry => {
       if (entry.isIntersecting) {
         const img = entry.target;
-        img.src = img.dataset.src;
+        const originalPath = img.dataset.src.replace('file://', '');
+
+        // Ask main process for cached thumbnail path
+        const thumbPath = await window.electronAPI.getThumbnailPath(originalPath);
+
+        if (thumbPath) {
+          img.src = `file://${thumbPath}`;
+        } else {
+          img.src = img.dataset.src; // fallback
+        }
+
         observer.unobserve(img);
       }
     });
@@ -93,6 +103,7 @@ function setupLazyLoading() {
 
   images.forEach(img => observer.observe(img));
 }
+
 
 window.addEventListener('DOMContentLoaded', async () => {
   const startPath = await window.electronAPI.getInitialFolder();
